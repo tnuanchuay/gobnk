@@ -29,14 +29,9 @@ func main() {
 
 	for _, member := range members{
 		fmt.Println("processing", member.MemberName)
-
 		listUser := getAllFollowersList(api, member.UserId)
-		t1 := time.Now()
 		addUnique(&member, listUser)
-		fmt.Println(time.Now().Unix() - t1.Unix())
 		memberFollowCount[member.MemberName] = memberFollowCount[member.MemberName] + len(member.Follower)
-
-
 		time.Sleep(1 * time.Second)
 	}
 
@@ -54,7 +49,7 @@ func main() {
 		publishJsonMetric(config, j)
 	}
 	end := time.Now()
-	fmt.Println("start", start.Unix(), "end", end.Unix())
+	fmt.Println("start", start.String(), "end", end.String())
 }
 
 func publishJsonMetric(config map[string]interface{}, json []byte){
@@ -90,7 +85,6 @@ func getAllFollowersList(api *anaconda.TwitterApi, id int64) []int64{
 		}
 		time.Sleep(100*time.Millisecond)
 		v.Set("cursor", c.Next_cursor_str)
-		fmt.Println("getting", id)
 	}
 
 	return users
