@@ -47,7 +47,7 @@ func main() {
 			"Timestamp" : time.Now().Unix()*1000,
 		}
 
-		_, err := json.Marshal(t)
+		j, err := json.Marshal(t)
 		if err != nil{
 			panic(err)
 		}
