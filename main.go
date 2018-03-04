@@ -18,7 +18,7 @@ const DEFAULT_OUTPUT = "output.json"
 func main() {
 	config := loadConfig()
 	memberFollowCount := make(map[string]int)
-
+	start := time.Now()
 	api := anaconda.NewTwitterApiWithCredentials(
 		config["access-token"].(string),
 		config["your-access-token-secret"].(string),
@@ -29,15 +29,14 @@ func main() {
 
 	for _, member := range members{
 		fmt.Println("processing", member.MemberName)
-		users, err := api.GetUserSearch(member.PageName, nil)
-		if err != nil {
-			panic(err)
-		}
-		if len(users) > 0{
-			listUser := getAllFollowersList(api, users[0].Id)
-			addUnique(&member, listUser)
-		}
+
+		listUser := getAllFollowersList(api, member.UserId)
+		t1 := time.Now()
+		addUnique(&member, listUser)
+		fmt.Println(time.Now().Unix() - t1.Unix())
 		memberFollowCount[member.MemberName] = memberFollowCount[member.MemberName] + len(member.Follower)
+
+
 		time.Sleep(1 * time.Second)
 	}
 
@@ -48,18 +47,19 @@ func main() {
 			"Timestamp" : time.Now().Unix()*1000,
 		}
 
-		j, err := json.Marshal(t)
+		_, err := json.Marshal(t)
 		if err != nil{
 			panic(err)
 		}
 		publishJsonMetric(config, j)
 	}
-
+	end := time.Now()
+	fmt.Println("start", start.Unix(), "end", end.Unix())
 }
 
 func publishJsonMetric(config map[string]interface{}, json []byte){
 	req := gorequest.New()
-	req.Post(fmt.Sprintf("http://localhost:9200/%s/%s", config["metric-index"], config["metric-type"])).Send(string(json)).End()
+	req.Post(fmt.Sprintf("http://%s:%d/%s/%s", config["es-endpoint"], config["es-port"], config["metric-index"], config["metric-type"])).Send(string(json)).End()
 }
 func addUnique(member *MemberInfo, followers []int64){
 	for _, f := range followers{
@@ -90,6 +90,7 @@ func getAllFollowersList(api *anaconda.TwitterApi, id int64) []int64{
 		}
 		time.Sleep(100*time.Millisecond)
 		v.Set("cursor", c.Next_cursor_str)
+		fmt.Println("getting", id)
 	}
 
 	return users
